@@ -1024,13 +1024,27 @@ async def main():
     print("Bot corriendo...")
     await application.run_polling()
 
+async def main():
+    TOKEN = os.environ.get("TOKEN")
+    if not TOKEN:
+        print("ERROR: La variable de entorno TOKEN no está definida")
+        return
+
+    # Iniciar el servidor Flask en un hilo
+    Thread(target=run_flask).start()
+
+    application = ApplicationBuilder().token(TOKEN).build()
+
+    # Añadir todos los handlers
+    application.add_handler(CommandHandler("comandos", comandos))
+    application.add_handler(CommandHandler("basecc", basecc))
+    application.add_handler(CommandHandler("agregarcc", agregarcc))
+    # Añadir los otros handlers...
+
+    print("Bot corriendo...")
+    await application.run_polling()  # Usamos await porque 'run_polling' es una función async
+
+
 if __name__ == '__main__':
     import asyncio
-
-    try:
-        asyncio.run(main())
-    except RuntimeError as e:
-        # Esto ocurre si el loop ya está corriendo, entonces creamos tarea y mantenemos el loop activo
-        loop = asyncio.get_event_loop()
-        loop.create_task(main())
-        loop.run_forever()
+    asyncio.run(main())  # Usamos asyncio.run para ejecutar la función 'main()' asincrónica
