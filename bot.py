@@ -1024,27 +1024,61 @@ async def main():
     print("Bot corriendo...")
     await application.run_polling()
 
+import os
+import logging
+from threading import Thread
+from telegram.ext import ApplicationBuilder, CommandHandler
+from flask import Flask
+
+# Configuración de logging
+logging.basicConfig(level=logging.INFO)
+
+# Servidor Flask para mantener el bot activo
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "El bot está corriendo"
+
+def run_flask():
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)
+
+# Funciones del bot (asegúrate de definirlas)
+async def comandos(update, context):
+    texto = "Comandos disponibles..."
+    await update.message.reply_text(texto)
+
+async def basecc(update, context):
+    # Lógica para el comando basecc
+    pass
+
+async def agregarcc(update, context):
+    # Lógica para agregar cuentas
+    pass
+
+# Función principal asincrónica
 async def main():
     TOKEN = os.environ.get("TOKEN")
     if not TOKEN:
         print("ERROR: La variable de entorno TOKEN no está definida")
         return
 
-    # Iniciar el servidor Flask en un hilo
+    # Iniciar el servidor Flask en un hilo separado
     Thread(target=run_flask).start()
 
+    # Crear la aplicación de Telegram
     application = ApplicationBuilder().token(TOKEN).build()
 
     # Añadir todos los handlers
     application.add_handler(CommandHandler("comandos", comandos))
     application.add_handler(CommandHandler("basecc", basecc))
     application.add_handler(CommandHandler("agregarcc", agregarcc))
-    # Añadir los otros handlers...
+    # Añadir otros handlers según sea necesario...
 
     print("Bot corriendo...")
-    await application.run_polling()  # Usamos await porque 'run_polling' es una función async
+    await application.run_polling()  # Ejecutar el bot en modo asincrónico
 
-
+# Ejecutar la función principal asincrónica
 if __name__ == '__main__':
-    import asyncio
-    asyncio.run(main())  # Usamos asyncio.run para ejecutar la función 'main()' asincrónica
+    main()  # Ejecuta la función 'main()' asincrónica directamente sin asyncio.run()
