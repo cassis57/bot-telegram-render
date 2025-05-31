@@ -345,11 +345,89 @@ async def comprarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ganancia = int(ganancia_str)
 
     cuenta_encontrada = None
-    for c in data["cuentas"]:
-        if c["plataforma"].lower() == plataforma.lower() and c["estado"] == "disponible":
 async def comprarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
+
+    if len(args) < 4:
+        await update.message.reply_text("Uso correcto:\n/comprarcc (número_cliente) (plataforma) (fecha_vencimiento) (ganancia)")
+        return
+
+    ganancia_str = args[-1]
+    fecha_vencimiento = args[-2]
+    plataforma = args[-3]
+    numero_cliente_parts = args[:-3]
+    numero_cliente = ' '.join(numero_cliente_parts).strip()
+
+    if not ganancia_str.isdigit():
+        await update.message.reply_text("Ganancia inválida, debe ser un número entero positivo sin decimales.")
+        return
+
+    ganancia = int(ganancia_str)
+
+    cuenta_encontrada = None
+    for c in data["cuentas"]:
+        if c["plataforma"].lower() == plataforma.lower() and c["estado"] == "disponible":
+            cuenta_encontrada = c
+            break
+
+    if not cuenta_encontrada:
+        await update.message.reply_text("No hay cuentas disponibles para esa plataforma.")
+        return
+
+    correo_cuenta = cuenta_encontrada["correo"].lower()
+    plataforma_cuenta = plataforma.lower()
+    clientes_a_modificar = []
+    for cliente_num, compras in list(data["clientes"].items()):
+        nuevas_compras = [compra for compra in compras
+                         if not (compra["correo"].lower() == correo_cuenta and compra["plataforma"].lower() == plataforma_cuenta)]
+        if len(nuevas_compras) != len(compras):
+            data["clientes"][cliente_num] = nuevas_compras
+            clientes_a_modificar.append(cliente_num)
+
+    for cliente_num in clientes_a_modificar:
+        if len(data["clientes"][cliente_num]) == 0:
+            del data["clientes"][cliente_num]
+
+    cuenta_encontrada["estado"] = "vendido"
+    cuenta_encontrada["cliente"] = numero_cliente
+    cuenta_encontrada["fecha_vencimiento"] = fecha_vencimiento
+
+    if numero_cliente not in data["clientes"]:
+        data["clientes"][numero_cliente] = []
+
+    existe = False
+    for compra in data["clientes"][numero_cliente]:
+        if compra["plataforma"].lower() == plataforma_cuenta and compra["correo"].lower() == correo_cuenta:
+            compra["fecha_vencimiento"] = fecha_vencimiento
+            existe = True
+            break
+    if not existe:
+        data["clientes"][numero_cliente].append({
+            "plataforma": plataforma,
+            "correo": cuenta_encontrada["correo"],
+            "contraseña": cuenta_encontrada["contraseña"],
+            "fecha_vencimiento": fecha_vencimiento
+        })
+
+    if "ganancias" not in data:
+        data["ganancias"] = {}
+    ganancia_actual = data["ganancias"].get(plataforma.lower(), 0)
+    data["ganancias"][plataforma.lower()] = ganancia_actual + ganancia
+
+    save_data(data)
+
+    mensaje = f"""- - - - - - - - - - - - - - - -
+-- *{plataforma.upper()}* --
+
+correo: {cuenta_encontrada['correo']}
+contraseña: {cuenta_encontrada['contraseña']}
+*Toca renovar:* {fecha_vencimiento}
+"""
+
+    boton = crear_boton_whatsapp(numero_cliente, mensaje)
+    await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
+
 
     if len(args) < 4:
         await update.message.reply_text("Uso correcto:\n/comprarcc (número_cliente) (plataforma) (fecha_vencimiento) (ganancia)")
