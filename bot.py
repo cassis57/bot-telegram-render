@@ -1082,6 +1082,11 @@ async def main():
     await application.run_polling()  # Ejecutar el bot en modo asincrónico
 
 # Ejecutar la función principal asincrónica
+# Ejecutar Flask y Telegram en hilos separados
 if __name__ == '__main__':
-    # Elimina asyncio.run y ejecuta main directamente
-    main()  # Ejecuta la función 'main()' asincrónica directamente sin asyncio.run()
+    def start_bot():
+        asyncio.run(main())  # Ejecutar el bot en un bucle de eventos asincrónico
+
+    # Ejecutar el bot en un hilo separado
+    bot_thread = Thread(target=start_bot)
+    bot_thread.start()
