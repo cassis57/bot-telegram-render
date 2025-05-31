@@ -1041,8 +1041,10 @@ def home():
     return "El bot está corriendo"
 
 def run_flask():
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
+    # Usa el puerto proporcionado por Render (usualmente está en la variable de entorno PORT)
+    port = int(os.environ.get('PORT', 8080))  # Si no está configurado, usa 8080 como valor predeterminado
+    app.run(host='0.0.0.0', port=port)  # Usa host='0.0.0.0' para que Flask acepte conexiones externas
+
 
 # Funciones del bot (asegúrate de definirlas)
 async def comandos(update, context):
