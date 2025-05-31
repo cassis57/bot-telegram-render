@@ -4,24 +4,6 @@ import logging
 import os
 from threading import Thread
 import asyncio
-
-from flask import Flask, jsonify
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-
-logging.basicConfig(level=logging.INFO)
-
-DATA_FILE = 'data.json'
-
-def load_data():
-    try:
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-import json
-import datetime
-import logging
-import os
-from threading import Thread
-import asyncio
 import urllib.parse
 
 from flask import Flask, jsonify
@@ -39,7 +21,6 @@ def load_data():
     except (FileNotFoundError, json.JSONDecodeError):
         return {"cuentas": [], "clientes": {}, "ganancias": {}}
 
-def save_data(data):
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
