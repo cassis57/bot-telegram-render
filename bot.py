@@ -1083,6 +1083,7 @@ async def main():
 
 # Ejecutar la función principal asincrónica
 # Ejecutar Flask y Telegram en hilos separados
+# Ejecutar Flask y Telegram en hilos separados
 if __name__ == '__main__':
     def start_bot():
         asyncio.run(main())  # Ejecutar el bot en un bucle de eventos asincrónico
