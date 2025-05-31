@@ -193,12 +193,13 @@ async def comprarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     save_data(data)
 
-    mensaje = f\"\"\"- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-       -- *{plataforma.upper()}* --
+mensaje = f"""- - - - - - - - - - - - - - - 
+-- *{plataforma.upper()}* --
+
 correo: {cuenta_encontrada['correo']}
 contraseña: {cuenta_encontrada['contraseña']}
 *Toca renovar:* {fecha_vencimiento}
-\"\"\" 
+"""
 
     boton = crear_boton_whatsapp(numero_cliente, mensaje)
     await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
