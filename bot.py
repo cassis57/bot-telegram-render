@@ -347,6 +347,29 @@ async def comprarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cuenta_encontrada = None
     for c in data["cuentas"]:
         if c["plataforma"].lower() == plataforma.lower() and c["estado"] == "disponible":
+async def comprarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    data = load_data()
+    args = context.args
+
+    if len(args) < 4:
+        await update.message.reply_text("Uso correcto:\n/comprarcc (número_cliente) (plataforma) (fecha_vencimiento) (ganancia)")
+        return
+
+    ganancia_str = args[-1]
+    fecha_vencimiento = args[-2]
+    plataforma = args[-3]
+    numero_cliente_parts = args[:-3]
+    numero_cliente = ' '.join(numero_cliente_parts).strip()
+
+    if not ganancia_str.isdigit():
+        await update.message.reply_text("Ganancia inválida, debe ser un número entero positivo sin decimales.")
+        return
+
+    ganancia = int(ganancia_str)
+
+    cuenta_encontrada = None
+    for c in data["cuentas"]:
+        if c["plataforma"].lower() == plataforma.lower() and c["estado"] == "disponible":
             cuenta_encontrada = c
             break
 
@@ -391,23 +414,28 @@ async def comprarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if "ganancias" not in data:
         data["ganancias"] = {}
+
     ganancia_actual = data["ganancias"].get(plataforma.lower(), 0)
     data["ganancias"][plataforma.lower()] = ganancia_actual + ganancia
 
     save_data(data)
 
-    mensaje = f\"\"\"- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-       -- *{plataforma.upper()}* --
+    mensaje = f"""- - - - - - - - - - - - - - - -
+-- *{plataforma.upper()}* --
+
 correo: {cuenta_encontrada['correo']}
 contraseña: {cuenta_encontrada['contraseña']}
 *Toca renovar:* {fecha_vencimiento}
-\"\"\" 
+"""
 
     boton = crear_boton_whatsapp(numero_cliente, mensaje)
     await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
+
+
 async def asignarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
+
     if len(args) < 4:
         await update.message.reply_text("Uso correcto:\n/asignarcc (plataforma) (correo) (número_cliente) (fecha_vencimiento)")
         return
@@ -477,13 +505,17 @@ Correo: {correo}
     boton = crear_boton_whatsapp(numero_cliente, mensaje)
     await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
 
+
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
+
     if len(args) < 1:
         await update.message.reply_text("Uso correcto:\n/info (número_cliente)")
         return
+
     numero_cliente = args[0].strip()
+
     if numero_cliente not in data["clientes"]:
         await update.message.reply_text("No se encontró información para ese número de cliente.")
         return
@@ -501,12 +533,15 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     boton = crear_boton_whatsapp(numero_cliente, texto_completo)
     await update.message.reply_text(texto_completo, reply_markup=boton)
 
+
 async def renovar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
+
     if len(args) < 4:
         await update.message.reply_text("Uso correcto:\n/renovar (número_cliente) (plataforma) (correo) (fecha_vencimiento)")
         return
+
     numero_cliente = args[0].strip()
     plataforma = args[1].strip()
     correo = args[2].strip()
@@ -539,12 +574,16 @@ async def renovar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     boton = crear_boton_whatsapp(numero_cliente, mensaje)
     await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
+
+
 async def reemplazar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
+
     if len(args) < 4:
         await update.message.reply_text("Uso correcto:\n/reemplazar (plataforma) (correo_viejo) (correo_nuevo) (contraseña_nueva)")
         return
+
     plataforma = args[0].strip()
     correo_viejo = args[1].strip()
     correo_nuevo = args[2].strip()
@@ -579,6 +618,7 @@ async def reemplazar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 """
     boton = crear_boton_whatsapp(cliente_asignado if cliente_asignado else '', mensaje)
     await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
+
 
 async def vencidos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
@@ -664,9 +704,11 @@ async def vencidos(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def eliminar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
+
     if len(args) < 2:
         await update.message.reply_text("Uso correcto:\n/eliminar (plataforma) (correo)")
         return
+
     plataforma = args[0].strip()
     correo = args[1].strip()
 
@@ -675,6 +717,31 @@ async def eliminar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if c["plataforma"].lower() == plataforma.lower() and c["correo"].lower() == correo.lower():
             cuenta_a_eliminar = c
             break
+
+    if not cuenta_a_eliminar:
+        await update.message.reply_text("No se encontró la cuenta para eliminar.")
+        return
+
+    cliente = cuenta_a_eliminar.get("cliente")
+    fecha_venc = cuenta_a_eliminar.get("fecha_vencimiento", "")
+
+    data["cuentas"].remove(cuenta_a_eliminar)
+
+    if cliente and cliente in data["clientes"]:
+        data["clientes"][cliente] = [compra for compra in data["clientes"][cliente] if compra["correo"].lower() != correo.lower()]
+        if len(data["clientes"][cliente]) == 0:
+            del data["clientes"][cliente]
+
+    save_data(data)
+
+    if cliente:
+        texto = f"""Asignar cuenta {plataforma}
+({cliente}) // ({fecha_venc})
+"""
+        boton = crear_boton_whatsapp(cliente, texto)
+        await update.message.reply_text(texto, reply_markup=boton)
+    else:
+        await update.message.reply_text("Cuenta eliminada correctamente.")
 
     if not cuenta_a_eliminar:
         await update.message.reply_text("No se encontró la cuenta para eliminar.")
