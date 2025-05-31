@@ -1,0 +1,418 @@
+{
+    "cuentas": [
+        {
+            "plataforma": "crunchyroll",
+            "correo": "Dosfredo480+crunchy1@gmail.com",
+            "contraseña": "blue123",
+            "estado": "vendido",
+            "cliente": "995940558",
+            "fecha_vencimiento": "29/06/25"
+        },
+        {
+            "plataforma": "crunchyroll",
+            "correo": "Dosfredo480+crunchy2@gmail.com",
+            "contraseña": "blue123",
+            "estado": "vendido",
+            "cliente": "918025327",
+            "fecha_vencimiento": "25/05/26"
+        },
+        {
+            "plataforma": "crunchyroll",
+            "correo": "Dosfredo480+crunchy3@gmail.com",
+            "contraseña": "blue123",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "crunchyroll",
+            "correo": "Dosfredo480+crunchy4@gmail.com",
+            "contraseña": "blue123",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "crunchyroll",
+            "correo": "Dosfredo480+crunchy5@gmail.com",
+            "contraseña": "blue123",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "crunchyroll",
+            "correo": "Dosfredo480+crunchy6@gmail.com",
+            "contraseña": "blue123",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "crunchyroll",
+            "correo": "Dosfredo480+crunchy7@gmail.com",
+            "contraseña": "blue123",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "crunchyroll",
+            "correo": "Dosfredo480+crunchy8@gmail.com",
+            "contraseña": "blue123",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "crunchyroll",
+            "correo": "Dosfredo480+crunchy9@gmail.com",
+            "contraseña": "blue123",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "crunchyroll",
+            "correo": "Dosfredo480+crunchy10@gmail.com",
+            "contraseña": "blue123",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max2@gmail.com",
+            "contraseña": "maxpremium1212",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max3@gmail.com",
+            "contraseña": "maxpremium1212",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max4@gmail.com",
+            "contraseña": "maxpremium1212",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max5@gmail.com",
+            "contraseña": "maxpremium1212",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max6@gmail.com",
+            "contraseña": "maxpremium1212",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max7@gmail.com",
+            "contraseña": "maxpremium1212",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max8@gmail.com",
+            "contraseña": "maxpremium1212",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max9@gmail.com",
+            "contraseña": "maxpremium1212",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max10@gmail.com",
+            "contraseña": "maxpremium1212",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "Auscass123+50@gmail.com",
+            "contraseña": "none",
+            "estado": "vendido",
+            "cliente": "936313771",
+            "fecha_vencimiento": "30/06/25"
+        },
+        {
+            "plataforma": "prime",
+            "correo": "sultaflor747+2@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "Fede.l131415@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "Fede.l131415+1@gmail.com",
+            "contraseña": "primevideo",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "Austi123cass@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "auselmillon@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "Auselmillon+1@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "Aus123cass+100@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "Junichax78?+100@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "streaming.cut+5151@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "lupeflorea3+500ss@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "lucascas677+55sd@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "tlor123.123+65sad6s@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "Junichax78+100@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "Austi123cass+1@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "Dosfredo480@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "juanmiguelgavilan912+654ss@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "luluguada999+654sds@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "austincassiel123+kjkjkj33@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "auselmillon+656sss@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "prime",
+            "correo": "streaming.cut@gmail.com",
+            "contraseña": "none",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max12@gmail.com",
+            "contraseña": "maxpremium5555",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max11@gmail.com",
+            "contraseña": "maxpremium5555",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max13@gmail.com",
+            "contraseña": "maxpremium5555",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max14@gmail.com",
+            "contraseña": "maxpremium5555",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max15@gmail.com",
+            "contraseña": "maxpremium5555",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max16@gmail.com",
+            "contraseña": "maxpremium5555",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max17@gmail.com",
+            "contraseña": "maxpremium5555",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        },
+        {
+            "plataforma": "max",
+            "correo": "Dosfredo480+max18@gmail.com",
+            "contraseña": "maxpremium5555",
+            "estado": "disponible",
+            "cliente": null,
+            "fecha_vencimiento": ""
+        }
+    ],
+    "clientes": {
+        "995940558": [
+            {
+                "plataforma": "crunchyroll",
+                "correo": "Dosfredo480+crunchy1@gmail.com",
+                "contraseña": "blue123",
+                "fecha_vencimiento": "29/06/25"
+            }
+        ],
+        "918025327": [
+            {
+                "plataforma": "crunchyroll",
+                "correo": "Dosfredo480+crunchy2@gmail.com",
+                "contraseña": "blue123",
+                "fecha_vencimiento": "25/05/26"
+            }
+        ],
+        "936313771": [
+            {
+                "plataforma": "prime",
+                "correo": "Auscass123+50@gmail.com",
+                "contraseña": "none",
+                "fecha_vencimiento": "30/06/25"
+            }
+        ]
+    },
+    "ganancias": {
+        "crunchyroll": 8.0,
+        "prime": 6.0
+    }
+}
