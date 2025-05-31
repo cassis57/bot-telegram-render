@@ -1029,6 +1029,7 @@ import logging
 from threading import Thread
 from telegram.ext import ApplicationBuilder, CommandHandler
 from flask import Flask
+import asyncio  # Importamos asyncio para ejecutar la función asincrónica
 
 # Configuración de logging
 logging.basicConfig(level=logging.INFO)
@@ -1083,4 +1084,4 @@ async def main():
 
 # Ejecutar la función principal asincrónica
 if __name__ == '__main__':
-    main()  # Ejecuta la función 'main()' asincrónica directamente sin asyncio.run()
+    asyncio.run(main())  # Usamos asyncio.run para ejecutar la función asincrónica 'main'
