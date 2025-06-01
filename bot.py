@@ -994,7 +994,24 @@ def run_flask():
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
 
-def main():
+import asyncio
+import logging
+from threading import Thread
+import os
+
+# Flask server para keepalive (igual que antes)
+from flask import Flask, jsonify
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return jsonify(status="ok")
+
+def run_flask():
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)
+
+async def main():
     TOKEN = os.environ.get("TOKEN")
     if not TOKEN:
         logging.error("ERROR: La variable de entorno TOKEN no está definida")
@@ -1005,7 +1022,7 @@ def main():
 
     application = ApplicationBuilder().token(TOKEN).build()
 
-    # Añadir todos los handlers (incluye todos los que tienes definidos)
+    # Añadir todos los handlers
     application.add_handler(CommandHandler("comandos", comandos))
     application.add_handler(CommandHandler("basecc", basecc))
     application.add_handler(CommandHandler("agregarcc", agregarcc))
@@ -1023,8 +1040,19 @@ def main():
     application.add_handler(CommandHandler("cancelarcompra", cancelarcompra))
 
     logging.info("Bot corriendo...")
-    # Aquí corre el bot sin asyncio.run ni hilos adicionales
-    application.run_polling()
+
+    # Elimina webhook para evitar conflictos con polling
+    await application.bot.delete_webhook(drop_pending_updates=True)
+
+    await application.run_polling()
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    loop.run_until_complete(main())
