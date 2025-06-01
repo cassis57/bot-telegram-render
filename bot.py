@@ -1017,12 +1017,11 @@ async def main():
         logging.error("ERROR: La variable de entorno TOKEN no está definida")
         exit(1)
 
-    # Ejecutar Flask en hilo daemon para keepalive
     Thread(target=run_flask, daemon=True).start()
 
     application = ApplicationBuilder().token(TOKEN).build()
 
-    # Añadir todos los handlers
+    # Añadir handlers aquí
     application.add_handler(CommandHandler("comandos", comandos))
     application.add_handler(CommandHandler("basecc", basecc))
     application.add_handler(CommandHandler("agregarcc", agregarcc))
@@ -1032,7 +1031,7 @@ async def main():
     application.add_handler(CommandHandler("renovar", renovar))
     application.add_handler(CommandHandler("reemplazar", reemplazar))
     application.add_handler(CommandHandler("vencidos", vencidos))
-    application.add_handler(CommandHandler("vencidas", vencidos))  # Alias con s
+    application.add_handler(CommandHandler("vencidas", vencidos))
     application.add_handler(CommandHandler("eliminar", eliminar))
     application.add_handler(CommandHandler("sincronizar", sincronizar))
     application.add_handler(CommandHandler("estadisticas", estadisticas))
@@ -1041,18 +1040,15 @@ async def main():
 
     logging.info("Bot corriendo...")
 
-    # Elimina webhook para evitar conflictos con polling
+    # Eliminar webhook para evitar conflictos
     await application.bot.delete_webhook(drop_pending_updates=True)
 
     await application.run_polling()
 
 if __name__ == "__main__":
     import asyncio
+    import nest_asyncio
+    nest_asyncio.apply()
 
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
+    loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
