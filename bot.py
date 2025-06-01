@@ -994,17 +994,18 @@ def run_flask():
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
 
-async def main():
+def main():
     TOKEN = os.environ.get("TOKEN")
     if not TOKEN:
-        print("ERROR: La variable de entorno TOKEN no está definida")
-        return
+        logging.error("ERROR: La variable de entorno TOKEN no está definida")
+        exit(1)
 
-    Thread(target=run_flask).start()
+    # Ejecutar Flask en hilo daemon para keepalive
+    Thread(target=run_flask, daemon=True).start()
 
     application = ApplicationBuilder().token(TOKEN).build()
 
-    # Añadir todos los handlers
+    # Añadir todos los handlers (incluye todos los que tienes definidos)
     application.add_handler(CommandHandler("comandos", comandos))
     application.add_handler(CommandHandler("basecc", basecc))
     application.add_handler(CommandHandler("agregarcc", agregarcc))
@@ -1021,82 +1022,9 @@ async def main():
     application.add_handler(CommandHandler("buscarcc", buscarcc))
     application.add_handler(CommandHandler("cancelarcompra", cancelarcompra))
 
-    print("Bot corriendo...")
-    await application.run_polling()
-
-import json
-import datetime
-import logging
-import os
-from threading import Thread
-import urllib.parse
-
-from flask import Flask, jsonify
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-
-logging.basicConfig(level=logging.INFO)
-
-DATA_FILE = 'data.json'
-
-def load_data():
-    try:
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"cuentas": [], "clientes": {}, "ganancias": {}}
-
-def save_data(data):
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-
-def crear_boton_whatsapp(numero, mensaje):
-    texto_url = urllib.parse.quote(mensaje)
-    url = f"https://wa.me/{numero}?text={texto_url}"
-    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("📲 WhatsApp Cliente", url=url)]])
-    return keyboard
-
-# Ejemplo: Comandos
-async def comandos(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    texto = """*** COMANDOS PRINCIPALES ***
-
-/comandos - Mostrar comandos
-/basecc - Mostrar todas las cuentas completas
-# Agrega aquí tus otros comandos...
-"""
-    await update.message.reply_text(texto)
-
-# Agrega aquí las demás funciones async (basecc, agregarcc, comprarcc, etc.) con la misma estructura
-
-# Servidor Flask para keepalive
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return jsonify({"status": "ok"})
-
-def run_flask():
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
-
-# Función principal, sin async
-def main():
-    TOKEN = os.environ.get("TOKEN")
-    if not TOKEN:
-        logging.error("ERROR: La variable de entorno TOKEN no está definida")
-        exit(1)
-
-    application = ApplicationBuilder().token(TOKEN).build()
-
-    # Agrega tus handlers aquí
-    application.add_handler(CommandHandler("comandos", comandos))
-    # application.add_handler(...)  # otros handlers
-
     logging.info("Bot corriendo...")
-    application.run_polling()  # Ejecuta sin asyncio.run ni await
+    # Aquí corre el bot sin asyncio.run ni hilos adicionales
+    application.run_polling()
 
 if __name__ == "__main__":
-    # Ejecutar Flask en hilo daemon para no bloquear
-    Thread(target=run_flask, daemon=True).start()
-    # Ejecutar bot en hilo principal (sin asyncio.run)
     main()
