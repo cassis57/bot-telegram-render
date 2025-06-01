@@ -1085,9 +1085,8 @@ async def main():
 # Ejecutar Flask y Telegram en hilos separados
 # Ejecutar Flask y Telegram en hilos separados
 if __name__ == '__main__':
-    def start_bot():
-        asyncio.run(main())  # Ejecutar el bot en un bucle de eventos asincrónico
+    # Ejecutar Flask en hilo separado para mantener vivo el servicio
+    Thread(target=run_flask).start()
 
-    # Ejecutar el bot en un hilo separado
-    bot_thread = Thread(target=start_bot)
-    bot_thread.start()
+    # Ejecutar el bot en hilo principal sin usar asyncio.run
+    main()
