@@ -3,6 +3,9 @@ import logging
 import nest_asyncio
 import asyncio
 from threading import Thread
+import json
+import urllib.parse
+import datetime
 
 from flask import Flask, jsonify
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -23,10 +26,9 @@ def run_flask():
     port = int(os.environ.get('PORT', 8080))  # Puerto asignado por Render
     app.run(host='0.0.0.0', port=port)
 
-# Funciones load_data y save_data para manejar el archivo JSON
+DATA_FILE = 'data.json'
+
 def load_data():
-    import json
-    DATA_FILE = 'data.json'
     try:
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
@@ -34,14 +36,11 @@ def load_data():
         return {"cuentas": [], "clientes": {}, "ganancias": {}}
 
 def save_data(data):
-    import json
-    DATA_FILE = 'data.json'
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 def crear_boton_whatsapp(numero, mensaje):
-    import urllib.parse
-    texto_url = urllib.parse.quote(mensaje)  # Codifica correctamente los caracteres especiales para URL
+    texto_url = urllib.parse.quote(mensaje)  # Codifica caracteres especiales para URL
     url = f"https://wa.me/{numero}?text={texto_url}"
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("📲 WhatsApp Cliente", url=url)]])
     return keyboard
@@ -139,7 +138,6 @@ async def agregarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
         mensaje_respuesta += "⚠️ Algunos errores:\n" + "\n".join(mensajes_error)
 
     await update.message.reply_text(mensaje_respuesta)
-
 # --- Comando /comprarcc ---
 async def comprarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
@@ -223,6 +221,7 @@ contraseña: {cuenta_encontrada['contraseña']}
 
     boton = crear_boton_whatsapp(numero_cliente, mensaje)
     await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
+
 # --- Comando /asignarcc ---
 async def asignarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
@@ -299,7 +298,6 @@ Correo: {correo}
     boton = crear_boton_whatsapp(numero_cliente, mensaje)
     await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
 
-
 # --- Comando /info ---
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
@@ -327,8 +325,6 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_completo = "\n".join(mensajes)
     boton = crear_boton_whatsapp(numero_cliente, texto_completo)
     await update.message.reply_text(texto_completo, reply_markup=boton)
-
-
 # --- Comando /renovar ---
 async def renovar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
@@ -370,7 +366,6 @@ async def renovar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     boton = crear_boton_whatsapp(numero_cliente, mensaje)
     await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
-
 
 # --- Comando /reemplazar ---
 async def reemplazar(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -416,43 +411,6 @@ async def reemplazar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     boton = crear_boton_whatsapp(cliente_asignado if cliente_asignado else '', mensaje)
     await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
 
-
-# --- Arranque principal ---
-async def main():
-    TOKEN = os.environ.get("TOKEN")
-    if not TOKEN:
-        logging.error("ERROR: La variable de entorno TOKEN no está definida")
-        exit(1)
-
-    Thread(target=run_flask, daemon=True).start()
-
-    application = ApplicationBuilder().token(TOKEN).build()
-
-    application.add_handler(CommandHandler("comandos", comandos))
-    application.add_handler(CommandHandler("basecc", basecc))
-    application.add_handler(CommandHandler("agregarcc", agregarcc))
-    application.add_handler(CommandHandler("comprarcc", comprarcc))
-    application.add_handler(CommandHandler("asignarcc", asignarcc))
-    application.add_handler(CommandHandler("info", info))
-    application.add_handler(CommandHandler("renovar", renovar))
-    application.add_handler(CommandHandler("reemplazar", reemplazar))
-    application.add_handler(CommandHandler("vencidos", vencidos))
-    application.add_handler(CommandHandler("vencidas", vencidos))  # alias
-    application.add_handler(CommandHandler("eliminar", eliminar))
-    application.add_handler(CommandHandler("sincronizar", sincronizar))
-    application.add_handler(CommandHandler("estadisticas", estadisticas))
-    application.add_handler(CommandHandler("buscarcc", buscarcc))
-    application.add_handler(CommandHandler("cancelarcompra", cancelarcompra))
-
-    logging.info("Bot corriendo...")
-
-    await application.bot.delete_webhook(drop_pending_updates=True)
-
-    await application.run_polling()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
 # --- Comando /vencidos ---
 async def vencidos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
@@ -534,8 +492,6 @@ async def vencidos(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if mensajes_enviados == 0:
         await update.message.reply_text("No hay cuentas vencidas para notificar.")
-
-
 # --- Comando /eliminar ---
 async def eliminar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
@@ -579,7 +535,6 @@ async def eliminar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("Cuenta eliminada correctamente.")
 
-
 # --- Comando /sincronizar ---
 async def sincronizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
@@ -614,7 +569,6 @@ async def sincronizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     save_data(data)
     await update.message.reply_text(f"Sincronización completada. Se actualizaron {sincronizados} cuentas y se limpiaron compras inexistentes.")
-
 
 # --- Comando /estadisticas ---
 async def estadisticas(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -667,7 +621,6 @@ async def estadisticas(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(texto, parse_mode="Markdown")
 
-
 # --- Comando /buscarcc ---
 async def buscarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
@@ -688,7 +641,6 @@ async def buscarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("\n".join(resultados))
     else:
         await update.message.reply_text("No se encontraron cuentas con ese correo o plataforma.")
-
 
 # --- Comando /cancelarcompra ---
 async def cancelarcompra(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -723,3 +675,38 @@ async def cancelarcompra(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_data(data)
 
     await update.message.reply_text(f"Compra cancelada y cuenta liberada para plataforma {plataforma}.")
+# --- Arranque principal ---
+async def main():
+    TOKEN = os.environ.get("TOKEN")
+    if not TOKEN:
+        logging.error("ERROR: La variable de entorno TOKEN no está definida")
+        exit(1)
+
+    Thread(target=run_flask, daemon=True).start()
+
+    application = ApplicationBuilder().token(TOKEN).build()
+
+    application.add_handler(CommandHandler("comandos", comandos))
+    application.add_handler(CommandHandler("basecc", basecc))
+    application.add_handler(CommandHandler("agregarcc", agregarcc))
+    application.add_handler(CommandHandler("comprarcc", comprarcc))
+    application.add_handler(CommandHandler("asignarcc", asignarcc))
+    application.add_handler(CommandHandler("info", info))
+    application.add_handler(CommandHandler("renovar", renovar))
+    application.add_handler(CommandHandler("reemplazar", reemplazar))
+    application.add_handler(CommandHandler("vencidos", vencidos))
+    application.add_handler(CommandHandler("vencidas", vencidos))  # alias
+    application.add_handler(CommandHandler("eliminar", eliminar))
+    application.add_handler(CommandHandler("sincronizar", sincronizar))
+    application.add_handler(CommandHandler("estadisticas", estadisticas))
+    application.add_handler(CommandHandler("buscarcc", buscarcc))
+    application.add_handler(CommandHandler("cancelarcompra", cancelarcompra))
+
+    logging.info("Bot corriendo...")
+
+    await application.bot.delete_webhook(drop_pending_updates=True)
+
+    await application.run_polling()
+
+if __name__ == "__main__":
+    asyncio.run(main())
