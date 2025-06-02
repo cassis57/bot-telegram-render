@@ -1,222 +1,32 @@
-import json
-import datetime
-import logging
 import os
+import logging
+import nest_asyncio
+import asyncio
 from threading import Thread
-import asyncio
-import urllib.parse
 
 from flask import Flask, jsonify
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-logging.basicConfig(level=logging.INFO)
-
-DATA_FILE = 'data.json'
-
-def load_data():
-    try:
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"cuentas": [], "clientes": {}, "ganancias": {}}
-
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-
-def crear_boton_whatsapp(numero, mensaje):
-    texto_url = urllib.parse.quote(mensaje)
-    url = f"https://wa.me/{numero}?text={texto_url}"
-    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("📲 WhatsApp Cliente", url=url)]])
-    return keyboard
-
-async def comandos(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    texto = """*** COMANDOS PRINCIPALES ***
-
-/comandos - Mostrar comandos
-/basecc - Mostrar todas las cuentas completas
-/agregarcc (plataforma) (correo contraseña) / (correo contraseña) / ... - Agregar cuentas múltiples
-/comprarcc (número_cliente) (plataforma) (fecha_vencimiento) (ganancia_entera) - Comprar cuenta con ganancia
-/asignarcc (plataforma) (correo) (número_cliente) (fecha_vencimiento) - Asignar cuenta disponible a cliente con fecha
-/info (número_cliente) - Info compras cliente
-/renovar (número_cliente) (plataforma) (correo) (fecha_vencimiento) - Renovar servicio
-/reemplazar (plataforma) (correo_viejo) (correo_nuevo) (contraseña_nueva) - Reemplazar cuenta
-/vencidos - Listar cuentas vencidas, liberar y sincronizar base
-/eliminar (plataforma) (correo) - Eliminar cuenta
-/sincronizar - Sincronizar bases clientes y cuentas
-/estadisticas - Mostrar resumen de estadísticas
-/buscarcc (correo_o_plataforma) - Buscar cuentas por correo o plataforma
-/cancelarcompra (número_cliente) (plataforma) (correo) - Cancelar compra (liberar cuenta)
-"""
-    await update.message.reply_text(texto)
-
-async def basecc(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    data = load_data()
-    cuentas = data["cuentas"]
-    if not cuentas:
-        await update.message.reply_text("No hay cuentas registradas aún.")
-        return
-
-    plataformas = {}
-    for c in cuentas:
-        plataforma = c["plataforma"].upper()
-        if plataforma not in plataformas:
-            plataformas[plataforma] = []
-        plataformas[plataforma].append(c)
-
-    texto = ""
-    for plataforma, cuentas_plat in plataformas.items():
-        texto += f"-- ({plataforma}) -- ({len(cuentas_plat)})\n"
-        for c in cuentas_plat:
-            estado = "Vendido" if c["estado"] == "vendido" else "Disponible"
-            cliente = c["cliente"] if c["cliente"] else "Libre"
-            fecha = c["fecha_vencimiento"] if c["fecha_vencimiento"] else ""
-            texto += f"- {c['correo']}  /  {estado}\n{cliente}  /  {fecha}\n"
-        texto += "\n"
-
-    await update.message.reply_text(texto.strip())
-
-async def agregarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    data = load_data()
-    args = context.args
-    if len(args) < 2:
-        await update.message.reply_text("Uso correcto:\n/agregarcc (plataforma) (correo contraseña) / (correo contraseña) / ...")
-        return
-
-    plataforma = args[0].strip()
-    cuentas_texto = update.message.text.split(' ', 2)[2].strip()
-    cuentas_partes = [c.strip() for c in cuentas_texto.split(' / ') if c.strip()]
-
-    cuentas_agregadas = 0
-    mensajes_error = []
-
-    for cuenta_str in cuentas_partes:
-        partes = cuenta_str.split()
-        if len(partes) < 2:
-            mensajes_error.append(f"Formato incorrecto en cuenta: '{cuenta_str}'")
-            continue
-        correo = partes[0].strip()
-        contraseña = ' '.join(partes[1:]).strip()
-
-        existe = any(c["plataforma"].lower() == plataforma.lower() and c["correo"].lower() == correo.lower() for c in data["cuentas"])
-        if existe:
-            mensajes_error.append(f"La cuenta {correo} ya está registrada.")
-            continue
-
-        nueva_cuenta = {
-            "plataforma": plataforma,
-            "correo": correo,
-            "contraseña": contraseña,
-            "estado": "disponible",
-            "cliente": None,
-            "fecha_vencimiento": ""
-        }
-        data["cuentas"].append(nueva_cuenta)
-        cuentas_agregadas += 1
-
-    save_data(data)
-
-    mensaje_respuesta = f"✅ Se agregaron {cuentas_agregadas} cuentas a {plataforma}.\n"
-    if mensajes_error:
-        mensaje_respuesta += "⚠️ Algunos errores:\n" + "\n".join(mensajes_error)
-
-    await update.message.reply_text(mensaje_respuesta)
-
-async def comprarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    data = load_data()
-    args = context.args
-
-    if len(args) < 4:
-        await update.message.reply_text("Uso correcto:\n/comprarcc (número_cliente) (plataforma) (fecha_vencimiento) (ganancia)")
-        return
-
-    ganancia_str = args[-1]
-    fecha_vencimiento = args[-2]
-    plataforma = args[-3]
-    numero_cliente_parts = args[:-3]
-    numero_cliente = ' '.join(numero_cliente_parts).strip()
-
-    if not ganancia_str.isdigit():
-        await update.message.reply_text("Ganancia inválida, debe ser un número entero positivo sin decimales.")
-        return
-
-    ganancia = int(ganancia_str)
-
-    cuenta_encontrada = None
-    for c in data["cuentas"]:
-        if c["plataforma"].lower() == plataforma.lower() and c["estado"] == "disponible":
-            cuenta_encontrada = c
-            break
-
-    if not cuenta_encontrada:
-        await update.message.reply_text("No hay cuentas disponibles para esa plataforma.")
-        return
-
-    correo_cuenta = cuenta_encontrada["correo"].lower()
-    plataforma_cuenta = plataforma.lower()
-    clientes_a_modificar = []
-    for cliente_num, compras in list(data["clientes"].items()):
-        nuevas_compras = [compra for compra in compras
-                         if not (compra["correo"].lower() == correo_cuenta and compra["plataforma"].lower() == plataforma_cuenta)]
-        if len(nuevas_compras) != len(compras):
-            data["clientes"][cliente_num] = nuevas_compras
-            clientes_a_modificar.append(cliente_num)
-
-    for cliente_num in clientes_a_modificar:
-        if len(data["clientes"][cliente_num]) == 0:
-            del data["clientes"][cliente_num]
-
-    cuenta_encontrada["estado"] = "vendido"
-    cuenta_encontrada["cliente"] = numero_cliente
-    cuenta_encontrada["fecha_vencimiento"] = fecha_vencimiento
-
-    if numero_cliente not in data["clientes"]:
-        data["clientes"][numero_cliente] = []
-
-    existe = False
-    for compra in data["clientes"][numero_cliente]:
-        if compra["plataforma"].lower() == plataforma_cuenta and compra["correo"].lower() == correo_cuenta:
-            compra["fecha_vencimiento"] = fecha_vencimiento
-            existe = True
-            break
-    if not existe:
-        data["clientes"][numero_cliente].append({
-            "plataforma": plataforma,
-            "correo": cuenta_encontrada["correo"],
-            "contraseña": cuenta_encontrada["contraseña"],
-            "fecha_vencimiento": fecha_vencimiento
-        })
-
-    if "ganancias" not in data:
-        data["ganancias"] = {}
-    ganancia_actual = data["ganancias"].get(plataforma.lower(), 0)
-    data["ganancias"][plataforma.lower()] = ganancia_actual + ganancia
-
-    save_data(data)
-
-    mensaje = f"""- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
--- *{plataforma.upper()}* --
-
-correo: {cuenta_encontrada['correo']}
-contraseña: {cuenta_encontrada['contraseña']}
-*Toca renovar:* {fecha_vencimiento}
-"""
-
-    boton = crear_boton_whatsapp(numero_cliente, mensaje)
-    await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
-
-# (Continúa con las otras funciones sin cambiar nada, solo asegurándote que la indentación sea correcta)
-import asyncio
-
-from flask import Flask, jsonify
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+# Aplica parche para evitar error "event loop already running" en Render
+nest_asyncio.apply()
 
 logging.basicConfig(level=logging.INFO)
 
-DATA_FILE = 'data.json'
+app = Flask(__name__)
 
+@app.route('/')
+def home():
+    return jsonify(status="ok")
+
+def run_flask():
+    port = int(os.environ.get('PORT', 8080))  # Puerto asignado por Render
+    app.run(host='0.0.0.0', port=port)
+
+# Funciones load_data y save_data para manejar el archivo JSON
 def load_data():
+    import json
+    DATA_FILE = 'data.json'
     try:
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
@@ -224,15 +34,18 @@ def load_data():
         return {"cuentas": [], "clientes": {}, "ganancias": {}}
 
 def save_data(data):
+    import json
+    DATA_FILE = 'data.json'
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 def crear_boton_whatsapp(numero, mensaje):
-    texto_url = mensaje.replace('\n', '%0A').replace(' ', '%20').replace('*', '')
+    import urllib.parse
+    texto_url = urllib.parse.quote(mensaje)  # Codifica correctamente los caracteres especiales para URL
     url = f"https://wa.me/{numero}?text={texto_url}"
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("📲 WhatsApp Cliente", url=url)]])
     return keyboard
-
+# --- Comando /comandos ---
 async def comandos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto = """*** COMANDOS PRINCIPALES ***
 
@@ -252,6 +65,8 @@ async def comandos(update: Update, context: ContextTypes.DEFAULT_TYPE):
 /cancelarcompra (número_cliente) (plataforma) (correo) - Cancelar compra (liberar cuenta)
 """
     await update.message.reply_text(texto)
+
+# --- Comando /basecc ---
 async def basecc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     cuentas = data["cuentas"]
@@ -278,6 +93,7 @@ async def basecc(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(texto.strip())
 
+# --- Comando /agregarcc ---
 async def agregarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
@@ -324,27 +140,7 @@ async def agregarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(mensaje_respuesta)
 
-async def comprarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    data = load_data()
-    args = context.args
-
-    if len(args) < 4:
-        await update.message.reply_text("Uso correcto:\n/comprarcc (número_cliente) (plataforma) (fecha_vencimiento) (ganancia)")
-        return
-
-    ganancia_str = args[-1]
-    fecha_vencimiento = args[-2]
-    plataforma = args[-3]
-    numero_cliente_parts = args[:-3]
-    numero_cliente = ' '.join(numero_cliente_parts).strip()
-
-    if not ganancia_str.isdigit():
-        await update.message.reply_text("Ganancia inválida, debe ser un número entero positivo sin decimales.")
-        return
-
-    ganancia = int(ganancia_str)
-
-    cuenta_encontrada = None
+# --- Comando /comprarcc ---
 async def comprarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
@@ -427,89 +223,7 @@ contraseña: {cuenta_encontrada['contraseña']}
 
     boton = crear_boton_whatsapp(numero_cliente, mensaje)
     await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
-
-
-    if len(args) < 4:
-        await update.message.reply_text("Uso correcto:\n/comprarcc (número_cliente) (plataforma) (fecha_vencimiento) (ganancia)")
-        return
-
-    ganancia_str = args[-1]
-    fecha_vencimiento = args[-2]
-    plataforma = args[-3]
-    numero_cliente_parts = args[:-3]
-    numero_cliente = ' '.join(numero_cliente_parts).strip()
-
-    if not ganancia_str.isdigit():
-        await update.message.reply_text("Ganancia inválida, debe ser un número entero positivo sin decimales.")
-        return
-
-    ganancia = int(ganancia_str)
-
-    cuenta_encontrada = None
-    for c in data["cuentas"]:
-        if c["plataforma"].lower() == plataforma.lower() and c["estado"] == "disponible":
-            cuenta_encontrada = c
-            break
-
-    if not cuenta_encontrada:
-        await update.message.reply_text("No hay cuentas disponibles para esa plataforma.")
-        return
-
-    correo_cuenta = cuenta_encontrada["correo"].lower()
-    plataforma_cuenta = plataforma.lower()
-    clientes_a_modificar = []
-    for cliente_num, compras in list(data["clientes"].items()):
-        nuevas_compras = [compra for compra in compras
-                         if not (compra["correo"].lower() == correo_cuenta and compra["plataforma"].lower() == plataforma_cuenta)]
-        if len(nuevas_compras) != len(compras):
-            data["clientes"][cliente_num] = nuevas_compras
-            clientes_a_modificar.append(cliente_num)
-
-    for cliente_num in clientes_a_modificar:
-        if len(data["clientes"][cliente_num]) == 0:
-            del data["clientes"][cliente_num]
-
-    cuenta_encontrada["estado"] = "vendido"
-    cuenta_encontrada["cliente"] = numero_cliente
-    cuenta_encontrada["fecha_vencimiento"] = fecha_vencimiento
-
-    if numero_cliente not in data["clientes"]:
-        data["clientes"][numero_cliente] = []
-
-    existe = False
-    for compra in data["clientes"][numero_cliente]:
-        if compra["plataforma"].lower() == plataforma_cuenta and compra["correo"].lower() == correo_cuenta:
-            compra["fecha_vencimiento"] = fecha_vencimiento
-            existe = True
-            break
-    if not existe:
-        data["clientes"][numero_cliente].append({
-            "plataforma": plataforma,
-            "correo": cuenta_encontrada["correo"],
-            "contraseña": cuenta_encontrada["contraseña"],
-            "fecha_vencimiento": fecha_vencimiento
-        })
-
-    if "ganancias" not in data:
-        data["ganancias"] = {}
-
-    ganancia_actual = data["ganancias"].get(plataforma.lower(), 0)
-    data["ganancias"][plataforma.lower()] = ganancia_actual + ganancia
-
-    save_data(data)
-
-    mensaje = f"""- - - - - - - - - - - - - - - -
--- *{plataforma.upper()}* --
-
-correo: {cuenta_encontrada['correo']}
-contraseña: {cuenta_encontrada['contraseña']}
-*Toca renovar:* {fecha_vencimiento}
-"""
-
-    boton = crear_boton_whatsapp(numero_cliente, mensaje)
-    await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
-
-
+# --- Comando /asignarcc ---
 async def asignarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
@@ -539,13 +253,14 @@ async def asignarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     correo_cuenta = correo.lower()
     plataforma_cuenta = plataforma.lower()
+
     clientes_a_modificar = []
     for cliente_num, compras in list(data["clientes"].items()):
-        nuevas_compras = [compra for compra in compras
-                         if not (compra["correo"].lower() == correo_cuenta and compra["plataforma"].lower() == plataforma_cuenta)]
+        nuevas_compras = [compra for compra in compras if not (compra["correo"].lower() == correo_cuenta and compra["plataforma"].lower() == plataforma_cuenta)]
         if len(nuevas_compras) != len(compras):
             data["clientes"][cliente_num] = nuevas_compras
             clientes_a_modificar.append(cliente_num)
+
     for cliente_num in clientes_a_modificar:
         if len(data["clientes"][cliente_num]) == 0:
             del data["clientes"][cliente_num]
@@ -563,6 +278,7 @@ async def asignarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
             compra["fecha_vencimiento"] = fecha_vencimiento
             existe = True
             break
+
     if not existe:
         data["clientes"][numero_cliente].append({
             "plataforma": plataforma,
@@ -584,6 +300,7 @@ Correo: {correo}
     await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
 
 
+# --- Comando /info ---
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
@@ -612,6 +329,7 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(texto_completo, reply_markup=boton)
 
 
+# --- Comando /renovar ---
 async def renovar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
@@ -654,6 +372,7 @@ async def renovar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
 
 
+# --- Comando /reemplazar ---
 async def reemplazar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
@@ -698,6 +417,43 @@ async def reemplazar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(mensaje, parse_mode='Markdown', reply_markup=boton)
 
 
+# --- Arranque principal ---
+async def main():
+    TOKEN = os.environ.get("TOKEN")
+    if not TOKEN:
+        logging.error("ERROR: La variable de entorno TOKEN no está definida")
+        exit(1)
+
+    Thread(target=run_flask, daemon=True).start()
+
+    application = ApplicationBuilder().token(TOKEN).build()
+
+    application.add_handler(CommandHandler("comandos", comandos))
+    application.add_handler(CommandHandler("basecc", basecc))
+    application.add_handler(CommandHandler("agregarcc", agregarcc))
+    application.add_handler(CommandHandler("comprarcc", comprarcc))
+    application.add_handler(CommandHandler("asignarcc", asignarcc))
+    application.add_handler(CommandHandler("info", info))
+    application.add_handler(CommandHandler("renovar", renovar))
+    application.add_handler(CommandHandler("reemplazar", reemplazar))
+    application.add_handler(CommandHandler("vencidos", vencidos))
+    application.add_handler(CommandHandler("vencidas", vencidos))  # alias
+    application.add_handler(CommandHandler("eliminar", eliminar))
+    application.add_handler(CommandHandler("sincronizar", sincronizar))
+    application.add_handler(CommandHandler("estadisticas", estadisticas))
+    application.add_handler(CommandHandler("buscarcc", buscarcc))
+    application.add_handler(CommandHandler("cancelarcompra", cancelarcompra))
+
+    logging.info("Bot corriendo...")
+
+    await application.bot.delete_webhook(drop_pending_updates=True)
+
+    await application.run_polling()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+# --- Comando /vencidos ---
 async def vencidos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     hoy = datetime.date.today()
@@ -779,6 +535,8 @@ async def vencidos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if mensajes_enviados == 0:
         await update.message.reply_text("No hay cuentas vencidas para notificar.")
 
+
+# --- Comando /eliminar ---
 async def eliminar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
@@ -821,31 +579,8 @@ async def eliminar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("Cuenta eliminada correctamente.")
 
-    if not cuenta_a_eliminar:
-        await update.message.reply_text("No se encontró la cuenta para eliminar.")
-        return
 
-    cliente = cuenta_a_eliminar.get("cliente")
-    fecha_venc = cuenta_a_eliminar.get("fecha_vencimiento", "")
-
-    data["cuentas"].remove(cuenta_a_eliminar)
-
-    if cliente and cliente in data["clientes"]:
-        data["clientes"][cliente] = [compra for compra in data["clientes"][cliente] if compra["correo"].lower() != correo.lower()]
-        if len(data["clientes"][cliente]) == 0:
-            del data["clientes"][cliente]
-
-    save_data(data)
-
-    if cliente:
-        texto = f"""Asignar cuenta {plataforma}
-({cliente}) // ({fecha_venc})
-"""
-        boton = crear_boton_whatsapp(cliente, texto)
-        await update.message.reply_text(texto, reply_markup=boton)
-    else:
-        await update.message.reply_text("Cuenta eliminada correctamente.")
-
+# --- Comando /sincronizar ---
 async def sincronizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
 
@@ -880,6 +615,8 @@ async def sincronizar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_data(data)
     await update.message.reply_text(f"Sincronización completada. Se actualizaron {sincronizados} cuentas y se limpiaron compras inexistentes.")
 
+
+# --- Comando /estadisticas ---
 async def estadisticas(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     hoy = datetime.date.today()
@@ -930,6 +667,8 @@ async def estadisticas(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(texto, parse_mode="Markdown")
 
+
+# --- Comando /buscarcc ---
 async def buscarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
@@ -950,6 +689,8 @@ async def buscarcc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("No se encontraron cuentas con ese correo o plataforma.")
 
+
+# --- Comando /cancelarcompra ---
 async def cancelarcompra(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
@@ -982,77 +723,3 @@ async def cancelarcompra(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_data(data)
 
     await update.message.reply_text(f"Compra cancelada y cuenta liberada para plataforma {plataforma}.")
-
-# --- Servidor Flask para keep-alive ---
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return jsonify(status="ok")
-
-def run_flask():
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
-
-import asyncio
-import logging
-from threading import Thread
-import os
-
-# Flask server para keepalive (igual que antes)
-from flask import Flask, jsonify
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return jsonify(status="ok")
-
-def run_flask():
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
-
-async def main():
-    TOKEN = os.environ.get("TOKEN")
-    if not TOKEN:
-        logging.error("ERROR: La variable de entorno TOKEN no está definida")
-        exit(1)
-
-    # Ejecutar Flask en hilo daemon para keepalive
-    Thread(target=run_flask, daemon=True).start()
-
-    application = ApplicationBuilder().token(TOKEN).build()
-
-    # Añadir todos los handlers
-    application.add_handler(CommandHandler("comandos", comandos))
-    application.add_handler(CommandHandler("basecc", basecc))
-    application.add_handler(CommandHandler("agregarcc", agregarcc))
-    application.add_handler(CommandHandler("comprarcc", comprarcc))
-    application.add_handler(CommandHandler("asignarcc", asignarcc))
-    application.add_handler(CommandHandler("info", info))
-    application.add_handler(CommandHandler("renovar", renovar))
-    application.add_handler(CommandHandler("reemplazar", reemplazar))
-    application.add_handler(CommandHandler("vencidos", vencidos))
-    application.add_handler(CommandHandler("vencidas", vencidos))  # Alias con s
-    application.add_handler(CommandHandler("eliminar", eliminar))
-    application.add_handler(CommandHandler("sincronizar", sincronizar))
-    application.add_handler(CommandHandler("estadisticas", estadisticas))
-    application.add_handler(CommandHandler("buscarcc", buscarcc))
-    application.add_handler(CommandHandler("cancelarcompra", cancelarcompra))
-
-    logging.info("Bot corriendo...")
-
-    # Eliminar webhook para evitar conflictos con polling
-    await application.bot.delete_webhook(drop_pending_updates=True)
-
-    # Ejecutar polling de forma asíncrona
-    await application.run_polling()
-
-if __name__ == "__main__":
-    import asyncio
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    loop.run_until_complete(main())
